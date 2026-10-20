@@ -10,13 +10,18 @@ class HeadingController(BaseHeadingController):
     def __init__(self):
         
         super().__init__("HeadingController")
-        self.kp = 2.0;
+        # self.kp = 2.0;
+        self.declare_parameter("kp", 2.0)
         # don't need to establish our own publishers/subscribers, since those are inherited from BaseHeadingController
         
+    @property
+    def kp(self) -> float:
+        return self.get_parameter("kp").value
+
     def compute_control_with_goal(self, state: TurtleBotState, goal: TurtleBotState) -> TurtleBotControl:
         
         error = wrap_angle(goal.theta - state.theta)
-        omega = self.kp * error;
+        omega = self.get_parameter("kp").value * error;
         msg = TurtleBotControl()
         msg.omega = omega;
         return msg;
