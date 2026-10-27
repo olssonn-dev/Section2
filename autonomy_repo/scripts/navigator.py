@@ -14,15 +14,15 @@ import typing as T
 
 class Navigator(BaseNavigator):
    
-    def __init__(self, kp, kpx: float, kpy: float, kdx: float, kdy: float,):
+    def __init__(self):
         # don't need to establish our own publishers/subscribers, since those are inherited from BaseNavigator
         super().__init__("navigator_node")
-        self.kp = kp;
+        self.kp = 2.0;
         self.V_PREV_THRES = 0.0001 
-        self.kpx = kpx
-        self.kpy = kpy
-        self.kdx = kdx
-        self.kdy = kdy
+        self.kpx = 2.0;
+        self.kpy = 2.0;
+        self.kdx = 2.0;
+        self.kdy = 2.0;
         
     def compute_heading_control(self, state: TurtleBotState, goal: TurtleBotState) -> TurtleBotControl:
         """ Compute only orientation target (used for NavMode.ALIGN and NavMode.Park)
@@ -66,8 +66,8 @@ class Navigator(BaseNavigator):
 
         ########## Code starts here ##########
         # avoid singularity
-        if abs(self.V_prev) < V_PREV_THRES:
-            self.V_prev = V_PREV_THRES
+        if abs(self.V_prev) < self.V_PREV_THRES:
+            self.V_prev = self.V_PREV_THRES
 
         xd = self.V_prev*np.cos(th)
         yd = self.V_prev*np.sin(th)
@@ -97,7 +97,7 @@ class Navigator(BaseNavigator):
         msg = TurtleBotControl()
         msg.v = V;
         msg.omega = om;
-        return V, om
+        return msg
     
     def compute_trajectory_plan(self,
         state: TurtleBotState,
@@ -122,10 +122,10 @@ class Navigator(BaseNavigator):
         x_goal_x = goal.x;
         x_goal_y = goal.y;
         
-        astar = AStar((0, 0), (horizon, horizon), (x_init_x, x_init_y), (x_goal_x, x_goal_y), occupancy)
+        astar = AStar((x_init_x - horizon, x_init_y - horizon), (x_init_x + horizon, x_init_y + horizon), (x_init_x, x_init_y), (x_goal_x, x_goal_y), occupancy)
         astar.solve()
         path = astar.path;
-        if not astar.solve() or path.length >= 4:
+        if not astar.solve() or path.length < 4:
             return None
         
         self.reset()
