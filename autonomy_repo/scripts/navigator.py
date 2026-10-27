@@ -289,7 +289,6 @@ class AStar(object):
             while current != self.x_init:
                 path.append(self.came_from[current])
                 current = path[-1]
-            self.path = path
             return list(reversed(path))
 
         def plot_path(self, fig_num=0, show_init_label=True):
@@ -341,8 +340,8 @@ class AStar(object):
                 x_current = self.find_best_est_cost_through()
                 
                 if x_current == self.x_goal: # final loop iteration will be when the last neighbor we're checking is the goal state
-                    self.reconstruct_path()
-                    return True
+                    self.path = self.reconstruct_path()
+                    return True, self.path
                 
                 self.open_set.remove(x_current) # this state is no longer one we want to analyze again, must remove so that while loop can stop appropriately. note that this state was already in the open set from when it was first analyzed as a neighbor
                 self.closed_set.add(x_current) # after the coming analysis, this state will be done-with
