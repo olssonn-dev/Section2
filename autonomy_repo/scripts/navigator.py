@@ -132,10 +132,9 @@ class Navigator(BaseNavigator):
         
         # smooth plan and get timesteps
         path = np.asarray(astar.path)
-        ts = [0];
-            
-        for i in range(1, path.shape[0]):
-            ts.append(ts[i-1] + astar.distance(path[i, :], path[i-1, :]) / v_desired);
+        dist = np.diff(path, axis=0)
+        dt = np.linalg.norm(dist, axis=1) / v_desired
+        ts = np.concatenate(([0.0], np.cumsum(dt)))
                         
         path_x_spline = splrep(ts, path[:, 0], k = 3, s = spline_alpha)
         path_y_spline = splrep(ts, path[:, 1], k = 3, s = spline_alpha)
