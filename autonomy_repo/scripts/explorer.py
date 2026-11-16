@@ -17,22 +17,25 @@ class Explorer(Node):
         self.occupancy: T.Optional[StochOccupancyGrid2D] = None
         self.state: T.Optional[TurtleBotState] = None
         self.frontier: T.Optional[StochOccupancyGrid2D] = None
+        self.map_counter = 0
 
         self.cmd_nav_pub = self.create_publisher(TurtleBotState, "/cmd_nav", 10)
         self.map_sub = self.create_subscription(OccupancyGrid, "/map", self.map_callback, 10)
         self.state_sub = self.create_subscription(TurtleBotState, "/state", self.state_callback, 10)
         self.nav_success_sub = self.create_subscription(Bool, "/nav_success", self.success_callback, 10)
-        self.timer_sub = self.create_timer(0.2, self.timer_callback)
+        # self.timer_sub = self.create_timer(1.0, self.timer_callback)
 
+    """
     def timer_callback(self) -> None:
-        self.timer_sub.cancel() # only needed upon startup
+        # self.timer_sub.cancel() # only needed upon startup
         self.frontier = self.explore(self.occupancy)
         start = np.array([self.state.x, self.state.y])
         goal, dist = self.closest_frontier(self.frontier, start)
         msg = TurtleBotState()
-        msg.x, msg.y = goal[0], goal[1]
+        msg.x, msg.y = 5, 5#goal[0], goal[1]
         msg.theta = 0
         self.cmd_nav_pub.publish(msg)
+    """
         
     def map_callback(self, msg: OccupancyGrid) -> None:
         """ Callback triggered when the map is updated
@@ -40,6 +43,7 @@ class Explorer(Node):
         Args:
             msg (OccupancyGrid): updated map message
         """
+            
         self.occupancy = StochOccupancyGrid2D(
             resolution=msg.info.resolution,
             size_xy=np.array([msg.info.width, msg.info.height]),
@@ -47,6 +51,16 @@ class Explorer(Node):
             window_size=9,
             probs=msg.data,
         )
+        
+        if self.map_counter == 0 and not self.state == None:
+            self.frontier = self.explore(self.occupancy)
+            start = np.array([self.state.x, self.state.y])
+            goal, dist = self.closest_frontier(self.frontier, start)
+            msg = TurtleBotState()
+            msg.x, msg.y = goal[0], goal[1]
+            msg.theta = 0.0
+            self.cmd_nav_pub.publish(msg)
+            self.map_counter = self.map_counter + 1
 
     def state_callback(self, msg: TurtleBotState) -> None:
         """ callback triggered when receiving latest turtlebot state
@@ -57,15 +71,24 @@ class Explorer(Node):
         self.state = msg
     
     def success_callback(self, msg: Bool) -> None:
-        if msg == True:
-            self.frontier = self.explore(self.occupancy)
+        
+        self.frontier = self.explore(self.occupancy)
         start = np.array([self.state.x, self.state.y])
         goal, dist = self.closest_frontier(self.frontier, start)
-        msg = TurtleBotState()
-        msg.x, msg.y = goal[0], goal[1]
-        msg.theta = 0
-        self.cmd_nav_pub.publish(msg)
-    
+        
+        if msg.data == True:
+            state_msg = TurtleBotState()
+            state_msg.x, state_msg.y = goal[0], goal[1]
+            state_msg.theta = 0.0
+            self.cmd_nav_pub.publish(state_msg)
+        elif msg.data == False:
+            self.frontier = self.frontier[~(self.frontier == goal).all(axis=1)]
+            goal, dist = self.closest_frontier(self.frontier, start)
+            state_msg = TurtleBotState()
+            state_msg.x, state_msg.y = goal[0], goal[1]
+            state_msg.theta = 0.0
+            self.cmd_nav_pub.publish(state_msg)
+
     def explore(self, occupancy, window_size=11, min_unknown=0.25, min_free=0.35, occupied_thresh=50):
         """
         Frontier cells of an occupancy grid.
