@@ -46,5 +46,10 @@ def generate_launch_description():
                 package="autonomy_repo", 
                 parameters = [{"use_sim_time": use_sim_time},],
             ),
+            Node(
+                executable="navigator.py",
+                package="autonomy_repo", 
+                parameters = [{"use_sim_time": use_sim_time},],
+            ),
         ]
     )
