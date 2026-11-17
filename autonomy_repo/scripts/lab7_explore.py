@@ -33,9 +33,10 @@ class FrontierExplore(Node):
         self.stop_detected = 0
         self.time_stopped = 0
         self.allow_new_stop_sign = True
+        self.new_state_final = TurtleBotState()
 
     def image_detected_callback(self, msg: Bool):
-
+        self.get_logger().info(f'Value: {self.stop_sign}')
         if msg.data and self.stop_detected == 0 and self.allow_new_stop_sign:
             self.hb_timer = self.create_timer(5, self.hb_callback)
             self.stop_detected = self.stop_detected + 1 # only stops right when stop-sign is detected
@@ -44,12 +45,15 @@ class FrontierExplore(Node):
             self.newpose_pub.publish(self.current_state)
 
     def hb_callback(self):
+        self.get_logger().info(f'Reached hb callback')
         self.stop_detected = 0
         self.stop_sign = False
         self.hb_timer.cancel()
-        self.new_timer = self.create_timer(1,self.new_timer_callback)
+        self.new_timer = self.create_timer(15,self.new_timer_callback)
+        self.newpose_pub.publish(self.new_state_final)
 
     def new_timer_callback(self):
+        self.get_logger().info(f'Reached timer callback')
         self.allow_new_stop_sign = True
         self.new_timer.cancel()
 
@@ -87,20 +91,20 @@ class FrontierExplore(Node):
             self.frontier_states = self.explore(self.occupancy)
             current_state = np.array([self.current_state.x,self.current_state.y])
             self.new_state,distance,self.index = self.closest_frontier(self.frontier_states,current_state)
-            new_state_final = TurtleBotState()
-            new_state_final.theta = self.current_state.theta
-            new_state_final.x = self.new_state[0]
-            new_state_final.y = self.new_state[1]
-            self.newpose_pub.publish(new_state_final)
+            self.new_state_final = TurtleBotState()
+            self.new_state_final.theta = self.current_state.theta
+            self.new_state_final.x = self.new_state[0]
+            self.new_state_final.y = self.new_state[1]
+            self.newpose_pub.publish(self.new_state_final)
         elif (msg.data == False) and (self.stop_sign == False):
             self.frontier_states = np.delete(self.frontier_states,self.index,axis=0)
             current_state = np.array([self.current_state.x,self.current_state.y])
             self.new_state,distance,self.index = self.closest_frontier(self.frontier_states,current_state)
-            new_state_final = TurtleBotState()
-            new_state_final.theta = self.current_state.theta
-            new_state_final.x = self.new_state[0]
-            new_state_final.y = self.new_state[1]
-            self.newpose_pub.publish(new_state_final)
+            self.new_state_final = TurtleBotState()
+            self.new_state_final.theta = self.current_state.theta
+            self.new_state_final.x = self.new_state[0]
+            self.new_state_final.y = self.new_state[1]
+            self.newpose_pub.publish(self.new_state_final)
 
     def window_counts(self,mask, window_size):
 
