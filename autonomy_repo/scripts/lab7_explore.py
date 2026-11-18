@@ -36,7 +36,7 @@ class FrontierExplore(Node):
         self.new_state_final = TurtleBotState()
 
     def image_detected_callback(self, msg: Bool):
-        self.get_logger().info(f'Value: {self.stop_sign}')
+        #self.get_logger().info(f'Value: {self.stop_sign}')
         if msg.data and self.stop_detected == 0 and self.allow_new_stop_sign:
             self.hb_timer = self.create_timer(5, self.hb_callback)
             self.stop_detected = self.stop_detected + 1 # only stops right when stop-sign is detected
@@ -49,7 +49,7 @@ class FrontierExplore(Node):
         self.stop_detected = 0
         self.stop_sign = False
         self.hb_timer.cancel()
-        self.new_timer = self.create_timer(15,self.new_timer_callback)
+        self.new_timer = self.create_timer(3,self.new_timer_callback)
         self.newpose_pub.publish(self.new_state_final)
 
     def new_timer_callback(self):
